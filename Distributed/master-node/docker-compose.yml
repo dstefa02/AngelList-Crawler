@@ -1,0 +1,44 @@
+version: '3'
+
+services:
+
+  mongo_angellist:
+    image: mongo:4.2
+    ports:
+      - 127.0.0.1:27015:27017 # local
+    restart: always
+    volumes:
+      - ~/mongodb-data-angellist:/data/db
+
+  zookeeper_angellist:
+    image: wurstmeister/zookeeper
+    ports:
+      - 10.166.0.2:2181:2181
+    logging:
+      options:
+        max-size: "2MB"
+        max-file: "10"
+ 
+  kafka_angellist:
+    image: wurstmeister/kafka
+    ports:
+      - 10.166.0.2:9095:9095
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper_angellist:2181
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://:9092,OUTSIDE://10.166.0.2:9095 # Production
+      KAFKA_LISTENERS: INSIDE://:9092,OUTSIDE://:9095
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_CREATE_TOPICS: "queries_topic:10:1,results_topic:1:1"
+    depends_on:
+      - zookeeper_angellist
+    logging:
+      options:
+        max-size: "2MB"
+        max-file: "10"
+
+  selenium_firefox:
+    image: selenium/standalone-firefox
+    ports:
+      - 127.0.0.1:4444:4444
+    shm_size: "2g"
